@@ -25,3 +25,8 @@ variable "vpc_security_group_ids" {
   type        = list(string)
   default     = []
 }
+variable "vpc_security_group_ids_db" {
+  description = "List of security group IDs to associate with the database instance"
+  type        = list(string)
+  default     = []
+}
