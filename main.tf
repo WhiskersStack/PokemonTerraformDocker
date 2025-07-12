@@ -48,8 +48,10 @@ output "ssh_command" {
   value = "cd to modules/ec2 and run : ssh -i MyKeyPair.pem ubuntu@${module.ec2.public_ip}"
 }
 
-# Create a vars.yml file with the public IP of the pokemon_db instance
-resource "local_file" "pokemon_db_public_ip" {
-  filename = "${path.module}/modules/ec2/pokemon-ansible/vars.yml"
-  content  = "ec2_ip: ${module.ec2.db_public_ip}"
+resource "local_file" "ansible_inventory" {
+  filename = "${path.module}/modules/ec2/pokemon-ansible/inventory.ini"
+  content  = <<EOF
+[web]
+ec2 ansible_host=${module.ec2.db_public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=MyKeyPair.pem
+EOF
 }

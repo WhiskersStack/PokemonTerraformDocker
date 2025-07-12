@@ -16,7 +16,6 @@ ansible-galaxy collection install community.docker
 
 ansible --version
 
-
 # --- Run Ansible Playbook ---
 cd /home/ubuntu/pokemon-ansible || {
   echo "[ERROR] /home/ubuntu/pokemon-ansible not found!"
@@ -24,18 +23,8 @@ cd /home/ubuntu/pokemon-ansible || {
 }
 
 echo "[INFO] Running playbook..."
-ansible-playbook -i inventory.ini pokemon_stack.yml --extra-vars="@vars.yml"
-
-
-
-
-
-
-
-
-
-
-
+#ansible-playbook -i inventory.ini pokemon_stack.yml
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini pokemon_stack.yml
 
 ###############################################################################
 
@@ -45,7 +34,6 @@ ansible-playbook -i inventory.ini pokemon_stack.yml --extra-vars="@vars.yml"
 # chown -R ubuntu:ubuntu /home/ubuntu/PokemonWithDynamoDB
 # echo 'if [ -n "$SSH_CONNECTION" ]; then cd ~/pokemon-ansible; fi' >> /home/ubuntu/.bashrc
 
-
 # Ansible setup
 # sudo apt update -y
 # sudo apt install software-properties-common -y
@@ -53,9 +41,6 @@ ansible-playbook -i inventory.ini pokemon_stack.yml --extra-vars="@vars.yml"
 # sudo apt install ansible -y
 # ansible --version
 # ansible-galaxy collection install community.docker
-
-
-
 
 # cd ~/pokemon-ansible
 # ansible-playbook -i inventory.ini pokemon_stack.yml --extra-vars="@vars.yml"
