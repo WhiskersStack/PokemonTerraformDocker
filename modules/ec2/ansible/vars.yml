@@ -1,4 +1,0 @@
-red_ip: 
-green_ip: 
-ansible_user: ubuntu
-ansible_ssh_key: home/ubuntu/MyKeyPair.pem

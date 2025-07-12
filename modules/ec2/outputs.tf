@@ -16,3 +16,6 @@ output "ssh_command" {
 output "db_ssh_command" {
   value = "ssh -i ${var.key_name}.pem ubuntu@${aws_instance.pokemon_db.public_ip}"
 }
+output "public_ip_db" {
+  value = aws_instance.pokemon_db.public_ip
+}

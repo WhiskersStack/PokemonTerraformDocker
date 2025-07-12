@@ -42,7 +42,12 @@ module "ec2" {
 #   value = module.dynamodb_pokemon.table_name
 # }
 
-# output "ssh_command" {
-#   value = "cd to modules/ec2 and run : ssh -i MyKeyPair.pem ubuntu@${module.ec2.public_ip}"
-# }
+output "ssh_command" {
+  value = "cd to modules/ec2 and run : ssh -i MyKeyPair.pem ubuntu@${module.ec2.public_ip}"
+}
 
+# Create a vars.yml file with the public IP of the pokemon_db instance
+resource "local_file" "pokemon_db_public_ip" {
+  filename = "${path.module}/pokemon-ansible/vars.yml"
+  content  = "ec2_ip: ${module.ec2.public_ip}"
+}

@@ -33,6 +33,10 @@ resource "aws_instance" "pokemon_game" {
     destination = "/home/ubuntu/MyKeyPair.pem"
   }
 
+  provisioner "file" {
+    source      = "${path.module}/pokemon-ansible"
+    destination = "/home/ubuntu/pokemon-ansible"
+  }
   # Runs the script remotely via SSH
   provisioner "remote-exec" {
     inline = [

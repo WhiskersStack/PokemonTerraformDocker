@@ -14,3 +14,4 @@ sudo apt install ansible -y
 ansible --version
 ansible-galaxy collection install community.docker
 sudo apt install python3-docker  # enables better Docker support in Ansible
+ansible-playbook -i inventory.ini pokemon_stack.yml --extra-vars="@vars.yml"
