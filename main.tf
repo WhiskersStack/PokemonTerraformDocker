@@ -1,9 +1,11 @@
+provider "local" {}
+
 data "aws_vpc" "default" {
   default = true
 }
-module "key" {
-  source = "./modules/key"
-}
+# module "key" {
+#   source = "./modules/key"
+# }
 module "security_group" {
   source   = "./modules/security_group"
   name     = "allow_ssh"
@@ -48,6 +50,6 @@ output "ssh_command" {
 
 # Create a vars.yml file with the public IP of the pokemon_db instance
 resource "local_file" "pokemon_db_public_ip" {
-  filename = "${path.module}/pokemon-ansible/vars.yml"
-  content  = "ec2_ip: ${module.ec2.public_ip}"
+  filename = "${path.module}/modules/ec2/pokemon-ansible/vars.yml"
+  content  = "ec2_ip: ${module.ec2.db_public_ip}"
 }

@@ -1,15 +1,12 @@
----
-- name: Setup Pokemon Flask + MongoDB with Docker
-  hosts: all
+- name: Deploy Pokémon Stack on Remote EC2
+  hosts: web
   become: true
-
-  vars:
-    project_dir: /home/{{ ansible_user }}/pokemon-stack
+  remote_user: ubuntu
 
   tasks:
-    - name: Update & upgrade apt packages
+    - name: Update and upgrade apt packages
       apt:
-        update_cache: true
+        update_cache: yes
         upgrade: dist
 
     - name: Install Docker
@@ -17,34 +14,35 @@
         name: docker.io
         state: present
 
-    - name: Add user to docker group
-      user:
-        name: "{{ ansible_user }}"
-        groups: docker
-        append: yes
+    - name: Download Docker Compose v2 binary
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.24.4/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
 
     - name: Enable and start Docker
-      systemd:
+      service:
         name: docker
         enabled: yes
         state: started
 
-    - name: Install Docker Compose plugin (new method)
-      apt:
-        name: docker-compose-plugin
-        state: present
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
 
-    - name: Create project directory
+    - name: Create project directories
       file:
-        path: "{{ project_dir }}/app"
+        path: /home/ubuntu/pokemon-stack/app
         state: directory
         recurse: yes
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
+        owner: ubuntu
+        group: ubuntu
 
     - name: Create .env file
       copy:
-        dest: "{{ project_dir }}/.env"
+        dest: /home/ubuntu/pokemon-stack/.env
         content: |
           MONGO_INITDB_ROOT_USERNAME=admin
           MONGO_INITDB_ROOT_PASSWORD=123123
@@ -52,7 +50,7 @@
 
     - name: Create docker-compose.yml
       copy:
-        dest: "{{ project_dir }}/docker-compose.yml"
+        dest: /home/ubuntu/pokemon-stack/docker-compose.yml
         content: |
           version: "3.9"
           services:
@@ -86,16 +84,16 @@
           networks:
             backend:
 
-    - name: Create app/requirements.txt
+    - name: Create requirements.txt
       copy:
-        dest: "{{ project_dir }}/app/requirements.txt"
+        dest: /home/ubuntu/pokemon-stack/app/requirements.txt
         content: |
           Flask==3.0.3
           pymongo[srv]==4.8.0
 
-    - name: Create app/Dockerfile
+    - name: Create app Dockerfile
       copy:
-        dest: "{{ project_dir }}/app/Dockerfile"
+        dest: /home/ubuntu/pokemon-stack/app/Dockerfile
         content: |
           FROM python:3.12-slim
           WORKDIR /app
@@ -105,9 +103,9 @@
           ENV FLASK_APP=main.py
           CMD ["flask", "run", "--host", "0.0.0.0", "--port", "5000"]
 
-    - name: Create app/main.py
+    - name: Create app main.py
       copy:
-        dest: "{{ project_dir }}/app/main.py"
+        dest: /home/ubuntu/pokemon-stack/app/main.py
         content: |
           from flask import Flask, jsonify
           from pymongo import MongoClient
@@ -133,28 +131,28 @@
           if __name__ == "__main__":
               app.run(debug=True)
 
-    - name: Build Docker containers
-      community.docker.docker_compose:
-        project_src: "{{ project_dir }}"
-        build: true
+    - name: Build containers
+      shell: docker-compose -f /home/ubuntu/pokemon-stack/docker-compose.yml build
+      args:
+        chdir: /home/ubuntu/pokemon-stack
 
-    - name: Start Docker containers
-      community.docker.docker_compose:
-        project_src: "{{ project_dir }}"
-        state: present
+    - name: Start containers
+      shell: docker-compose -f /home/ubuntu/pokemon-stack/docker-compose.yml up -d
+      args:
+        chdir: /home/ubuntu/pokemon-stack
 
-    - name: Wait for Flask app to be ready
+    - name: Wait for Flask app to start
       wait_for:
-        host: "localhost"
         port: 5000
+        delay: 5
         timeout: 30
 
-    - name: Check /health endpoint
+    - name: Test Flask health endpoint
       uri:
         url: http://localhost:5000/health
         return_content: yes
       register: flask_health
 
-    - name: Show health check response
+    - name: Show health check result
       debug:
         var: flask_health.content
