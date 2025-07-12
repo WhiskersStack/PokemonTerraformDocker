@@ -56,6 +56,11 @@ resource "aws_instance" "pokemon_game" {
     destination = "/home/ubuntu/pokemon-ansible"
   }
 
+  provisioner "file" {
+    source      = "${path.module}/pokemon-ansible/inventory.ini"
+    destination = "/home/ubuntu/pokemon-ansible/inventory.ini"
+  }
+  
   # Runs the script remotely via SSH
   provisioner "remote-exec" {
     inline = [
