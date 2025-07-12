@@ -52,6 +52,6 @@ resource "local_file" "ansible_inventory" {
   filename = "${path.module}/modules/ec2/pokemon-ansible/inventory.ini"
   content  = <<EOF
 [web]
-ec2 ansible_host=${module.ec2.db_public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=MyKeyPair.pem
+ec2 ansible_host=${module.ec2.db_public_ip} ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/MyKeyPair.pem
 EOF
 }
