@@ -1,0 +1,23 @@
+---
+- name: Install and configure NGINX with custom page
+  hosts: mynginx
+  become: true
+  tasks:
+    - name: Install NGINX
+      package:
+        name: nginx
+        state: present
+
+    - name: Ensure NGINX is running and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Deploy custom index.html
+      copy:
+        src: index.html
+        dest: /usr/share/nginx/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
