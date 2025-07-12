@@ -1,0 +1,160 @@
+---
+- name: Setup Pokemon Flask + MongoDB with Docker
+  hosts: all
+  become: true
+
+  vars:
+    project_dir: /home/{{ ansible_user }}/pokemon-stack
+
+  tasks:
+    - name: Update & upgrade apt packages
+      apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Install Docker Compose plugin (new method)
+      apt:
+        name: docker-compose-plugin
+        state: present
+
+    - name: Create project directory
+      file:
+        path: "{{ project_dir }}/app"
+        state: directory
+        recurse: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Create .env file
+      copy:
+        dest: "{{ project_dir }}/.env"
+        content: |
+          MONGO_INITDB_ROOT_USERNAME=admin
+          MONGO_INITDB_ROOT_PASSWORD=123123
+          MONGO_DB=pokemon
+
+    - name: Create docker-compose.yml
+      copy:
+        dest: "{{ project_dir }}/docker-compose.yml"
+        content: |
+          version: "3.9"
+          services:
+            mongodb:
+              image: mongo:7
+              restart: always
+              env_file: .env
+              environment:
+                MONGO_INITDB_DATABASE: "${MONGO_DB}"
+              volumes:
+                - mongo_data:/data/db
+              networks:
+                - backend
+
+            flask:
+              build: ./app
+              restart: always
+              env_file: .env
+              environment:
+                MONGO_URI: "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin"
+              ports:
+                - "5000:5000"
+              depends_on:
+                - mongodb
+              networks:
+                - backend
+
+          volumes:
+            mongo_data:
+
+          networks:
+            backend:
+
+    - name: Create app/requirements.txt
+      copy:
+        dest: "{{ project_dir }}/app/requirements.txt"
+        content: |
+          Flask==3.0.3
+          pymongo[srv]==4.8.0
+
+    - name: Create app/Dockerfile
+      copy:
+        dest: "{{ project_dir }}/app/Dockerfile"
+        content: |
+          FROM python:3.12-slim
+          WORKDIR /app
+          COPY requirements.txt .
+          RUN pip install --no-cache-dir -r requirements.txt
+          COPY . .
+          ENV FLASK_APP=main.py
+          CMD ["flask", "run", "--host", "0.0.0.0", "--port", "5000"]
+
+    - name: Create app/main.py
+      copy:
+        dest: "{{ project_dir }}/app/main.py"
+        content: |
+          from flask import Flask, jsonify
+          from pymongo import MongoClient
+          import os
+
+          app = Flask(__name__)
+          client = MongoClient(os.environ["MONGO_URI"])
+          db = client.get_database()
+
+          @app.route("/health")
+          def health():
+              try:
+                  client.admin.command("ping")
+                  return jsonify(status="ok"), 200
+              except:
+                  return jsonify(status="mongo unreachable"), 500
+
+          @app.route("/pokemon/<int:poke_id>")
+          def get_pokemon(poke_id):
+              doc = db.pokemon.find_one({"id": poke_id}, {"_id": 0})
+              return jsonify(doc or {"error": "not found"})
+
+          if __name__ == "__main__":
+              app.run(debug=True)
+
+    - name: Build Docker containers
+      community.docker.docker_compose:
+        project_src: "{{ project_dir }}"
+        build: true
+
+    - name: Start Docker containers
+      community.docker.docker_compose:
+        project_src: "{{ project_dir }}"
+        state: present
+
+    - name: Wait for Flask app to be ready
+      wait_for:
+        host: "localhost"
+        port: 5000
+        timeout: 30
+
+    - name: Check /health endpoint
+      uri:
+        url: http://localhost:5000/health
+        return_content: yes
+      register: flask_health
+
+    - name: Show health check response
+      debug:
+        var: flask_health.content
