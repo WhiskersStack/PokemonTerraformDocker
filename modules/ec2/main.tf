@@ -27,6 +27,12 @@ resource "aws_instance" "pokemon_game" {
     destination = "/tmp/init.sh"
   }
 
+  # Add MyKeyPair.pem to the instance
+  provisioner "file" {
+    source      = "${path.module}/MyKeyPair.pem"
+    destination = "/home/ubuntu/MyKeyPair.pem"
+  }
+
   # Runs the script remotely via SSH
   provisioner "remote-exec" {
     inline = [
