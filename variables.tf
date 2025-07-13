@@ -6,7 +6,7 @@ variable "ami" {
 variable "instance_type" {
   description = "The type of instance to create"
   type        = string
-  default     = "t2.micro" # Example instance type, replace with your own
+  default     = "t3.medium" # Example instance type, replace with your own
 }
 # variable "tags" {
 #   description = "Tags to apply to the instance"
